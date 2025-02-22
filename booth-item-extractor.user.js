@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         Booth Item Extractor
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.4
 // @description  Extract booth item information
 // @author       You
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
 // @grant        none
+// @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/527522/Booth%20Item%20Extractor.user.js
+// @updateURL https://update.greasyfork.org/scripts/527522/Booth%20Item%20Extractor.meta.js
 // ==/UserScript==
 
 (function() {
@@ -38,11 +41,13 @@
             const itemLink = header.querySelector('a[href*="/items/"]');
             const itemImage = header.querySelector('img.l-library-item-thumbnail');
             const itemTitle = header.querySelector('.text-text-default.font-bold');
+            const shopName = header.querySelector('.typography-14.text-text-gray600');
 
             itemData.push({
                 title: itemTitle ? itemTitle.textContent.trim() : '',
                 url: itemLink ? itemLink.href : '',
-                imageUrl: itemImage ? itemImage.src : ''
+                imageUrl: itemImage ? itemImage.src : '',
+                shop: shopName ? shopName.textContent.trim() : ''
             });
         });
 
