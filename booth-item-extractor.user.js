@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Booth Item Extractor
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Extract booth item information
 // @author       You
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
+// @match        https://booth.pm/*/items/*
 // @grant        none
 // @license      MIT
 // @downloadURL https://update.greasyfork.org/scripts/527522/Booth%20Item%20Extractor.user.js
@@ -131,35 +132,95 @@
         `;
     }
 
-    // 全ページ取得用ボタン
-    const allPagesButton = document.createElement('button');
-    allPagesButton.id = 'extractButton';
-    allPagesButton.textContent = 'Extract All Pages';
-    applyButtonStyle(allPagesButton, '200px');
+    // 商品ページ用の情報抽出関数
+    async function extractSingleItemInfo() {
+        const itemData = {
+            title: '',
+            imageUrl: '',
+            shop: '',
+            url: window.location.href
+        };
 
-    allPagesButton.addEventListener('click', async () => {
-        const itemInfo = await extractMultiplePages();
-        if (itemInfo && itemInfo.length > 0) {
-            console.log('Extracted Items Information:', itemInfo);
+        try {
+            // 商品名を取得
+            const titleElement = document.evaluate(
+                '//*[@id="items"]/article/div/div/div/div[4]/div[1]/div[1]/div[1]/header/h2',
+                document,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
+            if (titleElement) itemData.title = titleElement.textContent.trim();
+
+            // 画像を取得
+            const imageElement = document.evaluate(
+                '//*[@id="items"]/article/div/div/div/div[4]/div[2]/div[1]/div/div/div[2]/div/div/div/img',
+                document,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
+            if (imageElement) itemData.imageUrl = imageElement.src;
+
+            // ショップ名を取得
+            const shopElement = document.evaluate(
+                '//*[@id="items"]/article/div/div/div/div[4]/div[1]/div[1]/div[1]/header/div[3]/a[1]/span',
+                document,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
+            if (shopElement) itemData.shop = shopElement.textContent.trim();
+
+            console.log('Extracted Item Information:', itemData);
             try {
-                await navigator.clipboard.writeText(JSON.stringify(itemInfo, null, 2));
-                alert(`Items information copied to clipboard! (${itemInfo.length} items from multiple pages)`);
+                await navigator.clipboard.writeText(JSON.stringify([itemData], null, 2));
+                alert('Item information copied to clipboard!');
             } catch (err) {
                 console.error('Failed to copy:', err);
             }
-        } else {
-            console.error('Failed to extract items information');
+        } catch (error) {
+            console.error('Error extracting item information:', error);
         }
-    });
+    }
 
-    // 現在のページ取得用ボタン
-    const currentPageButton = document.createElement('button');
-    currentPageButton.id = 'extractCurrentPageButton';
-    currentPageButton.textContent = 'Extract Current Page';
-    applyButtonStyle(currentPageButton, '20px');
+    // Check if we're on a product page
+    if (window.location.href.match(/https:\/\/booth\.pm\/.*\/items\/.*/)) {
+        // 商品ページ用のボタン
+        const singleItemButton = document.createElement('button');
+        singleItemButton.id = 'extractSingleItemButton';
+        singleItemButton.textContent = 'Extract One Item';
+        applyButtonStyle(singleItemButton, '20px');
+        singleItemButton.addEventListener('click', extractSingleItemInfo);
+        document.body.appendChild(singleItemButton);
+    } else {
+        // If we're on the library page, add the original buttons
+        const allPagesButton = document.createElement('button');
+        allPagesButton.id = 'extractButton';
+        allPagesButton.textContent = 'Extract All Pages';
+        applyButtonStyle(allPagesButton, '200px');
+        allPagesButton.addEventListener('click', async () => {
+            const itemInfo = await extractMultiplePages();
+            if (itemInfo && itemInfo.length > 0) {
+                console.log('Extracted Items Information:', itemInfo);
+                try {
+                    await navigator.clipboard.writeText(JSON.stringify(itemInfo, null, 2));
+                    alert(`Items information copied to clipboard! (${itemInfo.length} items from multiple pages)`);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            } else {
+                console.error('Failed to extract items information');
+            }
+        });
 
-    currentPageButton.addEventListener('click', extractCurrentPage);
+        const currentPageButton = document.createElement('button');
+        currentPageButton.id = 'extractCurrentPageButton';
+        currentPageButton.textContent = 'Extract Current Page';
+        applyButtonStyle(currentPageButton, '20px');
+        currentPageButton.addEventListener('click', extractCurrentPage);
 
-    document.body.appendChild(allPagesButton);
-    document.body.appendChild(currentPageButton);
+        document.body.appendChild(allPagesButton);
+        document.body.appendChild(currentPageButton);
+    }
 })();
