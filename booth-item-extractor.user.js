@@ -1,9 +1,8 @@
 // ==UserScript==
 // @name         Booth Item Extractor
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.6.1
 // @description  Extract booth item information
-// @author       You
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
 // @match        https://booth.pm/*/items/*
