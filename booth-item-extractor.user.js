@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Booth Item Extractor
 // @namespace    http://tampermonkey.net/
-// @version      0.6.1
+// @version      0.6.2
 // @description  Extract booth item information
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -19,6 +19,12 @@
     function getCurrentPath() {
         const path = window.location.pathname;
         return path.startsWith('/library/gifts') ? '/library/gifts' : '/library';
+    }
+
+    function getCurrentPageNumber() {
+        const pageParam = new URLSearchParams(window.location.search).get('page');
+        const pageNum = parseInt(pageParam, 10);
+        return Number.isNaN(pageNum) || pageNum < 1 ? 1 : pageNum;
     }
 
     async function extractItemInfo(pageNum = 1) {
@@ -102,12 +108,13 @@
     }
 
     async function extractCurrentPage() {
-        const itemInfo = await extractItemInfo(1);
+        const currentPage = getCurrentPageNumber();
+        const itemInfo = await extractItemInfo(currentPage);
         if (itemInfo && itemInfo.length > 0) {
             console.log('Extracted Items Information:', itemInfo);
             try {
                 await navigator.clipboard.writeText(JSON.stringify(itemInfo, null, 2));
-                alert(`Items information copied to clipboard! (${itemInfo.length} items from current page)`);
+                alert(`Items information copied to clipboard! (${itemInfo.length} items from page ${currentPage})`);
             } catch (err) {
                 console.error('Failed to copy:', err);
             }
