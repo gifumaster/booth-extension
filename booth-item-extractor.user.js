@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Booth Item Extractor
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Extract booth item information
 // @author       You
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
 // @match        https://booth.pm/*/items/*
+// @match        https://*.booth.pm/items/*
 // @grant        none
 // @license      MIT
 // @downloadURL https://update.greasyfork.org/scripts/527522/Booth%20Item%20Extractor.user.js
@@ -42,7 +43,7 @@
             const itemLink = header.querySelector('a[href*="/items/"]');
             const itemImage = header.querySelector('img.l-library-item-thumbnail');
             const itemTitle = header.querySelector('.text-text-default.font-bold');
-            const shopName = header.querySelector('.typography-14.text-text-gray600');
+            const shopName = header.querySelector('.text-text-gray600');
 
             itemData.push({
                 title: itemTitle ? itemTitle.textContent.trim() : '',
@@ -152,15 +153,23 @@
             ).singleNodeValue;
             if (titleElement) itemData.title = titleElement.textContent.trim();
 
-            // 画像を取得
-            const imageElement = document.evaluate(
-                '//*[@id="items"]/article/div/div/div/div[4]/div[2]/div[1]/div/div/div[2]/div/div/div/img',
-                document,
-                null,
-                XPathResult.FIRST_ORDERED_NODE_TYPE,
-                null
-            ).singleNodeValue;
-            if (imageElement) itemData.imageUrl = imageElement.src;
+            // 画像を取得（div[2]から順にループして探す）
+            let imageElement = null;
+            for (let i = 2; i <= 5; i++) { // 2から5までのdiv要素を確認
+                const xpath = `//*[@id="items"]/article/div/div/div/div[4]/div[2]/div[1]/div/div/div[${i}]/div/div/div/img`;
+                imageElement = document.evaluate(
+                    xpath,
+                    document,
+                    null,
+                    XPathResult.FIRST_ORDERED_NODE_TYPE,
+                    null
+                ).singleNodeValue;
+
+                if (imageElement) {
+                    itemData.imageUrl = imageElement.src;
+                    break;
+                }
+            }
 
             // ショップ名を取得
             const shopElement = document.evaluate(
